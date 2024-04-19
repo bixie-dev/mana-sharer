@@ -1,7 +1,7 @@
-// @ts-nocheck
+// // @ts-nocheck
 
-export default function ConnectButton() {
-  return (
-    <w3m-button />
-  )
-}
+// export default function ConnectButton() {
+//   return (
+//     <w3m-button />
+//   )
+// }
