@@ -1,0 +1,7 @@
+const config = {
+    WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
+    WALLET_CONNECT_ORIGIN: process.env.NEXT_PUBLIC_WALLET_CONNECT_ORIGIN,
+    KOINOS_WALLET_SEED: process.env.NEXT_PUBLIC_KOINOS_WALLET_SEED,
+  }
+  
+  export default config;

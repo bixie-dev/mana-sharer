@@ -1,113 +1,157 @@
-import Image from "next/image";
+"use client"
+
+import { getBalance, getRC, hello } from "@/lib/api/koino";
+import ConnectButton from "@/lib/components/ConnectButton";
+import Input from "@/lib/components/Input";
+import { decimal } from "@/lib/constants/general";
+import SolanaModal from "@/solana-wallet/Modal";
+// import WalletConnectButton from "@/wallet-connect/ConnectButton";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [rc, setRC] = useState('');
+  const [mana, setMana] = useState('');
+  const [wallet, setWallet] = useState('');
+  const [disabled, setDisabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState(-1);
+  const [validWallet, setValidWallet] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [solBalance, setSolBalance] = useState(-1);
+  const { connection } = useConnection();
+  const { publicKey, disconnect, connecting, connected, sendTransaction } = useWallet();
+
+
+  useEffect(() => {
+    if (mana === '' || +mana <= 0) {
+      setDisabled(true);
+    } else if (wallet.length < 30) {
+      setDisabled(true);
+    } else if (!publicKey) {
+      setDisabled(true);
+    } else {
+      setDisabled(false);
+    }
+  }, [mana, wallet, publicKey]);
+
+  useEffect(() => {
+    checkBalance();
+  }, [wallet]);
+
+  const checkBalance = async () => {
+    setLoading(true);
+    try {
+      if (wallet.trim() === "") {
+        setBalance(-1);
+        throw new Error('Wallet address is empty');
+      }
+
+      const balance = await getBalance(wallet);
+      setBalance(balance);
+
+      const rc = await getRC(wallet);
+      setRC(rc);
+
+      setValidWallet(true);
+    } catch (e) {
+      setValidWallet(false);
+      // 
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    checkSolBalance();
+  }, [publicKey]);
+
+  const checkSolBalance = async () => {
+    if (publicKey && connection) {
+      const balance = await connection.getBalance(publicKey);
+      setSolBalance(balance);
+    }
+  }
+
+  const transfer = async (from: PublicKey, to: PublicKey, amount: number) => {
+    const tx = new Transaction();
+    tx.add(SystemProgram.transfer({
+      fromPubkey: from,
+      toPubkey: to,
+      lamports: amount * LAMPORTS_PER_SOL,
+    }));
+    const sign = await sendTransaction(tx, connection);
+    await connection.confirmTransaction(sign, 'processed');
+  }
+
+  const SendClick = async () => {
+    setLoading(true);
+    try {
+      // await transfer(publicKey!, new PublicKey('8rjddjXY8esUHYvCJ37mX2ijysZrkYC3k76bgEkHXZoL'), 0.1);
+
+      const result = await hello('Bixie');
+      console.log(result);
+
+    } catch (e) {
+      console.log(e);
+    }
+    setLoading(false);
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <main className="">
+        <div className="bg-slate-700">
+          <div className="container mx-auto px-4 sm:px-6 flex flex-col min-[425px]:flex-row justify-between items-center h-24 md:h-20 py-2 sm:py-0">
+            <div className="text-3xl font-bold">
+              <span className="text-green-500">Mana</span>
+              <span>Sharer</span>
+            </div>
+            {/* <WalletConnectButton /> */}
+            {publicKey && <button className="border border-white border-solid p-2" onClick={disconnect}>{publicKey.toBase58()}</button>}
+            {!publicKey && <ConnectButton onClick={() => setModalVisible(true)}>{connecting ? 'Connecting ...' : 'Connect'}</ConnectButton>}
+          </div>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+        <div className="container px-4 sm:px-6 flex flex-col items-center gap-3 max-w-xl mx-auto mt-4">
+          {publicKey && solBalance !== -1 && (
+            <div className="self-start flex flex-col gap-2">
+              <span>Available</span>
+              <span>{solBalance} SOL</span>
+            </div>
+          )}
+          <div className="w-full mt-3">
+            <label htmlFor="mana" className="block text-sm font-medium leading-6">Mana</label>
+            <Input type="number" id="mana" value={mana} min={0} max={9999999} onChange={e => setMana(e.target.value)} disabled={loading} />
+          </div>
+          <div className="w-full">
+            <label htmlFor="koinos-wallet">Koinos wallet</label>
+            <Input type="text" id="koinos-wallet" value={wallet} onChange={e => setWallet(e.target.value)} disabled={loading} />
+          </div>
+          {wallet.trim() !== '' && validWallet && (
+            <div className={`mt-6 flex gap-8 ${loading ? 'opacity-35' : undefined}`}>
+              <div className="flex gap-2">
+                <span>{balance / Math.pow(10, decimal)}</span>
+                <span>KOIN</span>
+              </div>
+              <div className="flex gap-2">
+                <span>{+rc / Math.pow(10, decimal)}</span>
+                <span>RC</span>
+              </div>
+            </div>
+          )}
+          {loading && <span className="mt-6">Loading ...</span>}
+        </div>
+        <div className="container mx-auto px-4 sm:px-6 max-w-md mt-5">
+          <button
+            onClick={SendClick}
+            disabled={disabled || loading || !validWallet}
+            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+          >
+            Buy MANA
+          </button>
+        </div>
+      </main>
+      {!connecting && !connected && <SolanaModal visible={modalVisible} onClose={() => setModalVisible(false)} />}
+    </>
   );
 }
