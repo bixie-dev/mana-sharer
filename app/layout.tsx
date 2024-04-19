@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Web3ModalProvider from "@/wallet-connect/Web3ModalProvider";
+// import Web3ModalProvider from "@/wallet-connect/Web3ModalProvider";
 
 import "./globals.css";
 import 'react-toastify/dist/ReactToastify.css';
@@ -23,11 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Web3ModalProvider>
+        {/* <Web3ModalProvider> */}
           <SolanaWalletProvider>
             {children}
           </SolanaWalletProvider>
-        </Web3ModalProvider>
+        {/* </Web3ModalProvider> */}
         <ToastContainer />
       </body>
     </html>
